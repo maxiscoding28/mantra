@@ -181,10 +181,19 @@ class _MantraHomePageState extends State<MantraHomePage> {
     );
   }
 
-  void _onTimerComplete() {
+  void _onTimerComplete() async {
     HapticFeedback.heavyImpact();
-    // In a real app, this would play the chime.mp3 asset
-    // For now, we use haptic feedback as fallback
+
+    // Play a simple system sound instead of MP3 for web compatibility
+    try {
+      // Use system sound which works better on web
+      await SystemSound.play(SystemSoundType.alert);
+      print('System chime played successfully');
+    } catch (e) {
+      print('System sound failed: $e');
+      // Fallback to additional haptic feedback
+      HapticFeedback.mediumImpact();
+    }
 
     _timerState.value = _timerState.value.copyWith(
       isRunning: false,
@@ -274,6 +283,20 @@ class _MantraHomePageState extends State<MantraHomePage> {
                   builder: (context, state, _) {
                     return Column(
                       children: [
+                        // Title
+                        Text(
+                          'Meditation Timer',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w400,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                        ),
+
+                        const SizedBox(height: 24),
+
                         // Minutes Selector
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -348,14 +371,15 @@ class _MantraHomePageState extends State<MantraHomePage> {
                         const SizedBox(height: 48),
 
                         // Timer Controls
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 12,
                           children: [
                             if (!state.isRunning &&
                                 state.remainingSeconds > 0) ...[
                               SizedBox(
-                                width: 120,
-                                height: 56,
+                                width: 100,
+                                height: 48,
                                 child: ElevatedButton(
                                   onPressed: _startTimer,
                                   style: ElevatedButton.styleFrom(
@@ -364,13 +388,13 @@ class _MantraHomePageState extends State<MantraHomePage> {
                                     foregroundColor:
                                         Theme.of(context).colorScheme.onPrimary,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
                                   child: const Text(
                                     'Start',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -378,8 +402,8 @@ class _MantraHomePageState extends State<MantraHomePage> {
                               ),
                             ] else if (state.isRunning) ...[
                               SizedBox(
-                                width: 120,
-                                height: 56,
+                                width: 100,
+                                height: 48,
                                 child: ElevatedButton(
                                   onPressed: _pauseTimer,
                                   style: ElevatedButton.styleFrom(
@@ -389,13 +413,13 @@ class _MantraHomePageState extends State<MantraHomePage> {
                                         .colorScheme
                                         .onSecondary,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
                                   child: const Text(
                                     'Pause',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -405,10 +429,9 @@ class _MantraHomePageState extends State<MantraHomePage> {
                             if (!state.isRunning &&
                                 state.remainingSeconds !=
                                     state.totalMinutes * 60) ...[
-                              const SizedBox(width: 16),
                               SizedBox(
-                                width: 120,
-                                height: 56,
+                                width: 100,
+                                height: 48,
                                 child: TextButton(
                                   onPressed: _resetTimer,
                                   style: TextButton.styleFrom(
@@ -417,7 +440,7 @@ class _MantraHomePageState extends State<MantraHomePage> {
                                         .onSurface
                                         .withOpacity(0.7),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: BorderRadius.circular(12),
                                       side: BorderSide(
                                         color: Theme.of(context)
                                             .colorScheme
@@ -429,7 +452,7 @@ class _MantraHomePageState extends State<MantraHomePage> {
                                   child: const Text(
                                     'Reset',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -444,108 +467,290 @@ class _MantraHomePageState extends State<MantraHomePage> {
                 ),
               ),
 
-              const SizedBox(height: 48),
+              const SizedBox(height: 24),
 
-              // History Section
-              if (_history.isNotEmpty) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24.0),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
+              // Small History Button (only show if history exists)
+              if (_history.isNotEmpty)
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => HistoryScreen(
+                          history: _history,
+                          onClearHistory: _clearHistory,
+                        ),
+                      ),
+                    ),
+                    icon: Icon(
+                      Icons.history,
+                      size: 16,
                       color: Theme.of(context)
                           .colorScheme
-                          .outline
-                          .withOpacity(0.1),
+                          .onSurface
+                          .withOpacity(0.6),
+                    ),
+                    label: Text(
+                      'View History',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Recent Sessions',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// History Screen - Separate view for meditation history
+class HistoryScreen extends StatelessWidget {
+  final List<MeditationSession> history;
+  final VoidCallback onClearHistory;
+
+  const HistoryScreen({
+    super.key,
+    required this.history,
+    required this.onClearHistory,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          'Meditation History',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        actions: [
+          if (history.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Clear History'),
+                    content: const Text(
+                        'Are you sure you want to clear all meditation history?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          onClearHistory();
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop();
+                        },
+                        child: Text(
+                          'Clear',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
                           ),
-                          TextButton(
-                            onPressed: _clearHistory,
-                            style: TextButton.styleFrom(
-                              foregroundColor: Theme.of(context)
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: Text(
+                'Clear All',
+                style: TextStyle(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ),
+        ],
+      ),
+      body: SafeArea(
+        child: history.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.self_improvement,
+                      size: 64,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.3),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No meditation sessions yet',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.6),
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Complete your first meditation to see it here',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.4),
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(24),
+                itemCount: history.length,
+                itemBuilder: (context, index) {
+                  final session = history[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withOpacity(0.1),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.05),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Mantra
+                        Text(
+                          session.mantra,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Duration and Time
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.timer,
+                              size: 16,
+                              color: Theme.of(context)
                                   .colorScheme
                                   .onSurface
                                   .withOpacity(0.6),
                             ),
-                            child: const Text('Clear'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      ...(_history.take(5).map((session) => Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(16),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${session.minutes} min',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.8),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                            const SizedBox(width: 16),
+                            Icon(
+                              Icons.access_time,
+                              size: 16,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatTimestamp(session.timestamp),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                            ),
+                          ],
+                        ),
+
+                        // Notes (if any)
+                        if (session.notes.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Theme.of(context)
                                   .colorScheme
                                   .secondary
                                   .withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        session.mantra,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${session.minutes} min • ${_formatTimestamp(session.timestamp)}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withOpacity(0.6),
-                                            ),
-                                      ),
-                                    ],
+                            child: Text(
+                              session.notes,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.8),
+                                    fontStyle: FontStyle.italic,
                                   ),
-                                ),
-                              ],
                             ),
-                          ))),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                },
+              ),
       ),
     );
   }
@@ -583,6 +788,14 @@ class _CompletionScreenState extends State<CompletionScreen> {
   bool _isGeneratingMantra = false;
   String? _mantra;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _notesController.addListener(() {
+      setState(() {}); // Update character counter
+    });
+  }
 
   @override
   void dispose() {
@@ -675,301 +888,300 @@ class _CompletionScreenState extends State<CompletionScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height -
-                  MediaQuery.of(context).padding.top -
-                  MediaQuery.of(context).padding.bottom -
-                  48,
-            ),
-            child: Column(
-              children: [
-                // Main Content
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 40),
-
-                    // Completion Icon
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.check_circle_outline,
-                        size: 48,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+          child: Column(
+            children: [
+              // Header section - fixed height
+              Column(
+                children: [
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.1),
+                      shape: BoxShape.circle,
                     ),
-
-                    const SizedBox(height: 24),
-
-                    // Completion Text
-                    Text(
-                      'Meditation Complete',
-                      style:
-                          Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.w400,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
+                    child: Icon(
+                      Icons.check_circle_outline,
+                      size: 30,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-
-                    const SizedBox(height: 8),
-
-                    Text(
-                      '${widget.minutes} minutes of mindfulness',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.7),
-                          ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Notes Input
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Meditation Complete',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${widget.minutes} minutes of mindfulness',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context)
-                              .colorScheme
-                              .outline
-                              .withOpacity(0.1),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'How was your meditation?',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                ),
-                          ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _notesController,
-                            maxLength: 280,
-                            maxLines: 3,
-                            decoration: InputDecoration(
-                              hintText: 'Share your insights (optional)',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .outline
-                                      .withOpacity(0.3),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .outline
-                                      .withOpacity(0.3),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Mantra Display
-                    if (_mantra != null) ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withOpacity(0.2),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Your Mantra',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _mantra!,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-
-                    // Error Display
-                    if (_error != null) ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .error
-                              .withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          _error!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                  ],
-                ),
-
-                // Spacer to push buttons to bottom
-                const SizedBox(height: 40),
-
-                // Action Buttons
-                Column(
-                  children: [
-                    if (_mantra == null) ...[
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed:
-                              _isGeneratingMantra ? null : _generateMantra,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary,
-                            foregroundColor:
-                                Theme.of(context).colorScheme.onPrimary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: _isGeneratingMantra
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          Theme.of(context)
-                                              .colorScheme
-                                              .onPrimary,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    const Text(
-                                      'Generating...',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : const Text(
-                                  'Mantra',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: TextButton(
-                        onPressed: _complete,
-                        style: TextButton.styleFrom(
-                          foregroundColor: Theme.of(context)
                               .colorScheme
                               .onSurface
                               .withOpacity(0.7),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(
+                        ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // Journal section - takes remaining space
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withOpacity(0.1),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Journal',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Reflect on your meditation experience',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
-                                  .outline
-                                  .withOpacity(0.3),
+                                  .onSurface
+                                  .withOpacity(0.6),
                             ),
-                          ),
-                        ),
-                        child: Text(
-                          _mantra != null ? 'Continue' : 'Skip',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: TextField(
+                          controller: _notesController,
+                          maxLength: 280,
+                          maxLines: null,
+                          expands: true,
+                          textAlignVertical: TextAlignVertical.top,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                                height: 1.5,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                          decoration: InputDecoration(
+                            hintText:
+                                'What did you notice during your meditation?\n\nAny insights, feelings, or thoughts you\'d like to capture...',
+                            hintStyle: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.4),
+                              height: 1.5,
+                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            counterText: '',
+                            contentPadding: EdgeInsets.zero,
                           ),
                         ),
                       ),
+                      // Character counter at bottom
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: Text(
+                          '${_notesController.text.length}/280',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.5),
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Mantra display section (if generated)
+              if (_mantra != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.2),
                     ),
-                  ],
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Your Mantra',
+                        style:
+                            Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _mantra!,
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            ),
+
+              // Error display
+              if (_error != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 16),
+
+              // Action buttons - fixed at bottom
+              Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: _isGeneratingMantra ? null : _generateMantra,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7C3AED),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isGeneratingMantra
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Generating...',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const Text(
+                              'Generate Mantra',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: TextButton(
+                      onPressed: _complete,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.7),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outline
+                                .withOpacity(0.3),
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        _mantra != null ? 'Continue' : 'Skip',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
