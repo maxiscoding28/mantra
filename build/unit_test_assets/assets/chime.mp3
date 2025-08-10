@@ -1,0 +1,4 @@
+# Placeholder for chime.mp3
+# This file represents a subtle meditation chime sound
+# In a real implementation, this would be a small MP3 file
+# For now, the app will fall back to haptic feedback
